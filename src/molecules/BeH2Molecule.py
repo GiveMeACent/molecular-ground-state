@@ -13,6 +13,7 @@ class BeH2Molecule:
   _nuclear_repulsion_energy: float = 0.0
   _cas: object | None = None
   _casci_energy: float | None = None
+  _scf: pyscf.scf.rohf.HF1e | pyscf.scf.hf_symm.HF1e | pyscf.scf.hf.RHF | pyscf.scf.rohf.ROHF | pyscf.scf.hf_symm.RHF | pyscf.scf.hf_symm.ROHF = None
 
   def __init__(self):
     self._mol = pyscf.gto.Mole()
@@ -51,19 +52,22 @@ class BeH2Molecule:
 
     return self._casci_energy
 
+  def get_scf(self):
+    return self._scf
+
   def get_molecule(self):
     return self._mol
 
   def compute_casci(self):
-    scf = pyscf.scf.RHF(self._mol).run()
+    self._scf = pyscf.scf.RHF(self._mol).run()
     num_orbitals = len(self._active_space)
     n_electrons = int(
-        sum(scf.mo_occ[self._active_space])
+        sum(self._scf.mo_occ[self._active_space])
     )
     num_elec_a = (n_electrons + self._mol.spin) // 2
     num_elec_b = (n_electrons - self._mol.spin) // 2
     self._cas = pyscf.mcscf.CASCI(
-        scf,
+        self._scf,
         num_orbitals,
         (num_elec_a, num_elec_b),
     )
