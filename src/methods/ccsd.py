@@ -7,7 +7,8 @@ import pyscf
 class CCSDMethod:
   def __init__(self, scf: pyscf.scf.rohf.HF1e | pyscf.scf.hf_symm.HF1e | pyscf.scf.hf.RHF | pyscf.scf.rohf.ROHF | pyscf.scf.hf_symm.RHF | pyscf.scf.hf_symm.ROHF, mol: pyscf.gto.Mole, active_space: range,
                ) -> None:
-    frozen = [i for i in range(mol.nao_nr())if i not in active_space]
+    frozen = [i for i in range(mol.nao_nr())
+              if i not in active_space]
 
     self._ccsd = pyscf.cc.CCSD(
         scf, frozen=frozen,

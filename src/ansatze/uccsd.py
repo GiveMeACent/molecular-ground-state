@@ -5,21 +5,19 @@ import ffsim
 
 
 class UCCSDAnsatz:
-  def __init__(
-      self,
-      num_spatial_orbitals: int,
-  ) -> None:
+  def __init__(self, num_spatial_orbitals: int, num_occ: int) -> None:
     self._num_spatial_orbitals = num_spatial_orbitals
+    self._num_occ = num_occ
+    self._num_virt = num_spatial_orbitals - num_occ
 
     self._t1: np.ndarray | None = None
     self._t2: np.ndarray | None = None
     self._operator: ffsim.UCCSDOpRestricted | None = None
 
   def initialize_zero(self) -> None:
-    n = self._num_spatial_orbitals
-
-    self._t1 = np.zeros((n, n))
-    self._t2 = np.zeros((n, n, n, n))
+    self._t1 = np.zeros((self._num_occ, self._num_virt))
+    self._t2 = np.zeros((self._num_occ, self._num_occ,
+                        self._num_virt, self._num_virt))
 
   def set_parameters(
       self,
