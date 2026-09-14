@@ -1,0 +1,9 @@
+qiskit
+qiskit-aer
+qiskit-addon-sqd
+qiskit_ibm_runtime
+numpy
+pyscf
+scipy
+ffsim
+matplotlib
