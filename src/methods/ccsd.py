@@ -4,7 +4,11 @@ import numpy as np
 import pyscf
 
 
-class CCSDMethod:
+class CCSD:
+  _t1: np.ndarray | None = None
+  _t2: np.ndarray | None = None
+  _energy: float | None = None
+
   def __init__(self, scf: pyscf.scf.rohf.HF1e | pyscf.scf.hf_symm.HF1e | pyscf.scf.hf.RHF | pyscf.scf.rohf.ROHF | pyscf.scf.hf_symm.RHF | pyscf.scf.hf_symm.ROHF, mol: pyscf.gto.Mole, active_space: range,
                ) -> None:
     frozen = [i for i in range(mol.nao_nr())
@@ -13,10 +17,6 @@ class CCSDMethod:
     self._ccsd = pyscf.cc.CCSD(
         scf, frozen=frozen,
     )
-
-    self._t1: np.ndarray | None = None
-    self._t2: np.ndarray | None = None
-    self._energy: float | None = None
 
   def run(self) -> None:
     self._ccsd.run()
