@@ -12,19 +12,26 @@ class SpinType(Enum):
 
 
 class UCJ:
-  _n_occ: int
-  _n_virt: int
-  _n_reps: int
-  _spin_type: SpinType
-  _orbital_params: np.ndarray | None = None
-  _jastrow_params: tuple[np.ndarray, ...] | None = None
-  _operator: ffsim.UCJOpSpinless | ffsim.UCJOpSpinUnbalanced | ffsim.UCJOpSpinBalanced | None = None
-
-  def __init__(self, n_occ: int, n_virt: int, n_reps: int, spin_type: SpinType):
+  def __init__(
+      self,
+      n_occ: int,
+      n_virt: int,
+      n_reps: int,
+      spin_type: SpinType
+  ):
     self._n_occ = n_occ
     self._n_virt = n_virt
     self._n_reps = n_reps
     self._spin_type = spin_type
+
+    self._orbital_params: np.ndarray | None = None
+    self._jastrow_params: tuple[np.ndarray, ...] | None = None
+    self._operator: (
+        ffsim.UCJOpSpinless
+        | ffsim.UCJOpSpinUnbalanced
+        | ffsim.UCJOpSpinBalanced
+        | None
+    ) = None
 
   def set_params(self, orbital_parameters: np.ndarray, jastrow_params: tuple[np.ndarray, ...]):
     self._orbital_params = orbital_parameters

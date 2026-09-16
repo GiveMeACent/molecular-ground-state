@@ -1,24 +1,11 @@
 import numpy as np
 import pyscf
+from qiskit.quantum_info import SparsePauliOp
 
 
 class BeH2Molecule:
-  _mol: pyscf.gto.Mole
-  _n_frozen: int
-  _active_space: range
-  _num_elec_a: int
-  _num_elec_b: int
-
-  _hcore: np.ndarray | None = None
-  _eri: np.ndarray | None = None
-
-  _nuclear_repulsion_energy: float | None = None
-  _cas: object | None = None
-  _casci_energy: float | None = None
-  _scf: pyscf.scf.rohf.HF1e | pyscf.scf.hf_symm.HF1e | pyscf.scf.hf.RHF | pyscf.scf.rohf.ROHF | pyscf.scf.hf_symm.RHF | pyscf.scf.hf_symm.ROHF = None
-
-  def __init__(self):
-    self._mol = pyscf.gto.Mole()
+  def __init__(self) -> None:
+    self._mol: pyscf.gto.Mole = pyscf.gto.Mole()
 
     self._mol.build(
         atom=[
@@ -30,17 +17,49 @@ class BeH2Molecule:
         symmetry="Dooh",
     )
 
-    self._n_frozen = 1
-    self._active_space = range(
+    self._n_frozen: int = 1
+
+    self._active_space: range = range(
         self._n_frozen,
         self._mol.nao_nr(),
     )
 
+    self._hcore: np.ndarray | None = None
+    self._eri: np.ndarray | None = None
+    self._nuclear_repulsion_energy: float | None = None
+
+    self._cas: object | None = None
+    self._casci_energy: float | None = None
+
+    self._scf: (
+        pyscf.scf.rohf.HF1e
+        | pyscf.scf.hf_symm.HF1e
+        | pyscf.scf.hf.RHF
+        | pyscf.scf.rohf.ROHF
+        | pyscf.scf.hf_symm.RHF
+        | pyscf.scf.hf_symm.ROHF
+        | None
+    ) = None
+
+    self._hamiltonian: SparsePauliOp | None = None
+
     n_electrons = int(
-        sum(self._scf.mo_occ[self._active_space])
+        sum(
+            self._scf.mo_occ[i]
+            for i in self._active_space
+        )
     )
-    self._num_elec_a = (n_electrons + self._mol.spin) // 2
-    self._num_elec_b = (n_electrons - self._mol.spin) // 2
+
+    self._num_elec_a: int = (
+        n_electrons + self._mol.spin
+    ) // 2
+
+    self._num_elec_b: int = (
+        n_electrons - self._mol.spin
+    ) // 2
+
+  def get_electrons_number(self):
+    return (self._num_elec_a, self._num_elec_b)
 
   def get_body_integrals(self):
     if self._hcore is None or self._eri is None:
@@ -64,6 +83,12 @@ class BeH2Molecule:
 
   def get_scf(self):
     return self._scf
+
+  def get_qubit_hamiltonian(self) -> SparsePauliOp:
+    if self._hamiltonian is None:
+      # TODO: build hamiltonian
+      return None
+    return self._hamiltonian
 
   def get_molecule(self):
     return self._mol
@@ -95,5 +120,5 @@ class BeH2Molecule:
 
     self._eri = pyscf.ao2mo.restore(1, self._cas.get_h2cas(mo), num_orbitals)
 
-  def get_electrons_number(self):
-    return (self._num_elec_a, self._num_elec_b)
+  def set_hamiltonian(self, hamiltonian: SparsePauliOp) -> None:
+    self._hamiltonian = hamiltonian

@@ -5,18 +5,21 @@ import ffsim
 
 
 class UCCSD:
-  _n_occ: int
-  _n_virt: int
-  _num_elec: tuple[int, int]
+  def __init__(
+      self,
+      n_occ: int,
+      n_virt: int,
+      num_elec: tuple[int, int],
+  ) -> None:
 
-  _t1: np.ndarray | None = None
-  _t2: np.ndarray | None = None
-  _operator: ffsim.UCCSDOpRestricted | None = None
+    self._n_occ: int = n_occ
+    self._n_virt: int = n_virt
+    self._num_elec: tuple[int, int] = num_elec
 
-  def __init__(self, n_occ: int, n_virt: int, num_elec: int):
-    self._n_occ = n_occ
-    self._n_virt = n_virt
-    self._num_elec = num_elec
+    self._t1: np.ndarray | None = None
+    self._t2: np.ndarray | None = None
+
+    self._operator: ffsim.UCCSDOpRestricted | None = None
 
   def initialize_t1_t2(self):
     self._t1 = np.zeros(
