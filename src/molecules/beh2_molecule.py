@@ -1,10 +1,11 @@
 import numpy as np
+import ffsim
 import pyscf
 from qiskit.quantum_info import SparsePauliOp
 
 
 class BeH2Molecule:
-  def __init__(self) -> None:
+  def __init__(self):
     self._mol: pyscf.gto.Mole = pyscf.gto.Mole()
 
     self._mol.build(
@@ -26,7 +27,7 @@ class BeH2Molecule:
 
     self._hcore: np.ndarray | None = None
     self._eri: np.ndarray | None = None
-    self._nuclear_repulsion_energy: float | None = None
+    self._core_energy: float | None = None
 
     self._cas: object | None = None
     self._casci_energy: float | None = None
@@ -39,9 +40,10 @@ class BeH2Molecule:
         | pyscf.scf.hf_symm.RHF
         | pyscf.scf.hf_symm.ROHF
         | None
-    ) = None
+    ) = pyscf.scf.RHF(self._mol).run()
 
-    self._hamiltonian: SparsePauliOp | None = None
+    self._qubit_hamiltonian: SparsePauliOp | None = None
+    self._molecular_hamiltonian: ffsim.MolecularHamiltonian | None = None
 
     n_electrons = int(
         sum(
@@ -67,10 +69,10 @@ class BeH2Molecule:
 
     return self._hcore, self._eri
 
-  def get_nuclear_repulsion_energy(self):
-    if self._nuclear_repulsion_energy is None:
+  def get_core_energy(self):
+    if self._core_energy is None:
       self.compute_body_integrals()
-    return self._nuclear_repulsion_energy
+    return self._core_energy
 
   def get_active_space(self):
     return self._active_space
@@ -84,17 +86,30 @@ class BeH2Molecule:
   def get_scf(self):
     return self._scf
 
+  def get_molecular_hamiltonian(self) -> ffsim.MolecularHamiltonian:
+    if self._molecular_hamiltonian is None:
+      if self._hcore is None or self._eri is None:
+        self.compute_body_integrals()
+      self._molecular_hamiltonian = ffsim.MolecularHamiltonian(
+          one_body_tensor=self._hcore,
+          two_body_tensor=self._eri,
+          constant=self._core_energy,
+      )
+    return self._molecular_hamiltonian
+
   def get_qubit_hamiltonian(self) -> SparsePauliOp:
-    if self._hamiltonian is None:
-      # TODO: build hamiltonian
-      return None
-    return self._hamiltonian
+    if self._qubit_hamiltonian is None:
+      molecular_hamiltonian = self.get_molecular_hamiltonian()
+      fermion_op = ffsim.fermion_operator(molecular_hamiltonian)
+      self._qubit_hamiltonian = ffsim.qiskit.jordan_wigner(
+          fermion_op, norb=len(self._active_space))
+
+    return self._qubit_hamiltonian
 
   def get_molecule(self):
     return self._mol
 
   def compute_casci(self):
-    self._scf = pyscf.scf.RHF(self._mol).run()
     num_orbitals = len(self._active_space)
     self._cas = pyscf.mcscf.CASCI(
         self._scf,
@@ -114,11 +129,14 @@ class BeH2Molecule:
 
     mo = self._cas.sort_mo(self._active_space, base=0)
 
-    (self._hcore, self._nuclear_repulsion_energy) = self._cas.get_h1cas(mo)
+    (self._hcore, self._core_energy) = self._cas.get_h1cas(mo)
 
     num_orbitals = len(self._active_space)
 
     self._eri = pyscf.ao2mo.restore(1, self._cas.get_h2cas(mo), num_orbitals)
 
-  def set_hamiltonian(self, hamiltonian: SparsePauliOp) -> None:
-    self._hamiltonian = hamiltonian
+  def set_molecular_hamiltonian(self, molecular_hamiltonian: ffsim.MolecularHamiltonian):
+    self._molecular_hamiltonian = molecular_hamiltonian
+
+  def set_qubit_hamiltonian(self, qubit_hamiltonian: SparsePauliOp):
+    self._qubit_hamiltonian = qubit_hamiltonian

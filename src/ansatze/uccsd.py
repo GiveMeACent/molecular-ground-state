@@ -10,7 +10,7 @@ class UCCSD:
       n_occ: int,
       n_virt: int,
       num_elec: tuple[int, int],
-  ) -> None:
+  ):
 
     self._n_occ: int = n_occ
     self._n_virt: int = n_virt
