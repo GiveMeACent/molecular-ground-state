@@ -44,15 +44,18 @@ class VQE:
     }
 
   def _prepare_variational_circuit(self):
+    if self._variational_circuit is not None:
+      self._variational_circuit = QuantumCircuit(
+          self._hamiltonian.num_qubits, self._hamiltonian.num_qubits)
     if self._initial_state is not None:
       self._variational_circuit.compose(self._initial_state, inplace=True)
     self._variational_circuit.compose(self._ansatz, inplace=True)
+    self._variational_circuit.measure_all()
 
     self._variational_circuit_isa = self._pass_manager.run(
         self._variational_circuit)
     self._hamiltonian_isa = self._hamiltonian.apply_layout(
         layout=self._variational_circuit_isa.layout)
-    self._estimator.options.default_shots = 10000
 
   def _evaluate_energy(self, parameters):
     pub = (self._variational_circuit_isa, [
@@ -70,14 +73,16 @@ class VQE:
 
   def _optimize(self):
     x0 = np.concatenate([p.ravel() for p in self._parameters])
-    minimize(
+    result = minimize(
         self._evaluate_energy,
         x0,
         method=self._optimizer,
         tol=self._tolerance,
         options={"maxiter": self._max_iterations},
     )
+    return result
 
   def run(self):
     self._prepare_variational_circuit()
-    self._optimize()
+    result = self._optimize()
+    return result
