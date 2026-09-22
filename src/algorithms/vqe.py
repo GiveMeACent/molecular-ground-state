@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
+from qiskit.circuit import Parameter
 from scipy.optimize import minimize
 from qiskit_ibm_runtime import EstimatorV2 as Estimator
-from qiskit.transpiler.preset_passmanagers import StagedPassManager
 
 
 class VQE:
@@ -13,12 +13,12 @@ class VQE:
       self,
       hamiltonian: SparsePauliOp,
       ansatz: QuantumCircuit,
-      parameters: list[np.ndarray],
+      parameters: dict[Parameter, float],
       estimator: Estimator,
-      pass_manager: StagedPassManager,
+      pass_manager,
       initial_state: QuantumCircuit | None = None,
       optimizer: str = "cobyla",
-      max_iterations: int = 100,
+      max_iterations: int = 10,
       tolerance: float = 1e-6,
   ):
 
@@ -32,6 +32,7 @@ class VQE:
     self._max_iterations = max_iterations
     self._tolerance = tolerance
 
+    self._hamiltonian_isa: SparsePauliOp | None = None
     self._variational_circuit: QuantumCircuit = QuantumCircuit(
         hamiltonian.num_qubits, hamiltonian.num_qubits)
     self._variational_circuit_isa: QuantumCircuit | None = None
@@ -44,13 +45,13 @@ class VQE:
     }
 
   def _prepare_variational_circuit(self):
-    if self._variational_circuit is not None:
-      self._variational_circuit = QuantumCircuit(
-          self._hamiltonian.num_qubits, self._hamiltonian.num_qubits)
+    self._variational_circuit = QuantumCircuit(
+        self._hamiltonian.num_qubits,
+        self._hamiltonian.num_qubits,
+    )
     if self._initial_state is not None:
       self._variational_circuit.compose(self._initial_state, inplace=True)
     self._variational_circuit.compose(self._ansatz, inplace=True)
-    self._variational_circuit.measure_all()
 
     self._variational_circuit_isa = self._pass_manager.run(
         self._variational_circuit)
@@ -72,7 +73,10 @@ class VQE:
     return energy
 
   def _optimize(self):
-    x0 = np.concatenate([p.ravel() for p in self._parameters])
+    x0 = np.array([
+        self._parameters[p]
+        for p in self._variational_circuit_isa.parameters
+    ])
     result = minimize(
         self._evaluate_energy,
         x0,
