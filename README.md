@@ -1,295 +1,112 @@
-# Molecular Ground State
+# molecular-ground-state
 
-A quantum-computing project for estimating the ground-state energy of the **beryllium hydride (BeH₂)** molecule using different quantum chemistry and quantum algorithms.
+Ground-state energy estimation of **BeH₂** using three quantum-centric diagonalization techniques (**VQE**, **SQD**, and **SKQD**) compared against classical references (**RHF**, **CASCI**, and **CCSD**).
 
-The project combines classical quantum-chemistry methods with quantum-circuit-based approaches, providing a common workflow to compare reference energies with variational and sampling-based methods.
+## Why
 
-## Overview
+This is a personal project to understand the physics, mathematics, and implementation details behind VQE, SQD, and SKQD.
 
-The current implementation uses **BeH₂** as the molecular system and evaluates its ground-state energy using:
+It is **not** intended to replace existing libraries such as `ffsim` or `qiskit-addon-sqd`. The goal was instead to implement a meaningful part of the stack from scratch and verify it against trusted implementations.
 
-* **CASCI** — Complete Active Space Configuration Interaction
-* **CCSD** — Coupled Cluster Singles and Doubles
-* **VQE** — Variational Quantum Eigensolver
-* **SQD** — Sample-based Quantum Diagonalization
-* **SKQD** — Sampling-based Krylov Quantum Diagonalization
+In particular, the **UCJ ansatz is implemented from scratch as a parameterized Qiskit circuit** and verified against `ffsim.UCJOpSpinBalancedJW`, reaching a state fidelity of **1**.
 
-The VQE and sampling-based methods operate on a quantum circuit initialized from a Hartree–Fock state and constructed using a **Unitary Cluster Jastrow (UCJ)** ansatz.
+## Problem setup
 
-The main execution pipeline is implemented in [`src/main.py`](src/main.py).
+The system is:
 
-## Architecture
+* **BeH₂**
+* **STO-3G**
+* 1 frozen core orbital
+* active space: **6 orbitals / 4 electrons**
 
-The project is organized into the following main components:
+The quantum methods are:
+
+* **VQE**: variational optimization of a parameterized UCJ circuit;
+* **SQD**: sampling from a fixed circuit followed by classical diagonalization in the sampled subspace;
+* **SKQD**: SQD extended with a Krylov sequence generated through Trotterized time evolution.
+
+The classical references are RHF, CASCI, and CCSD.
+
+## Structure
 
 ```text
 molecular-ground-state/
-├── src/
-│   ├── algorithms/
-│   │   ├── vqe.py
-│   │   ├── sqd.py
-│   │   └── skqd.py
-│   │
-│   ├── ansatze/
-│   │   └── ucj.py
-│   │
-│   ├── methods/
-│   │   └── ccsd.py
-│   │
-│   ├── molecules/
-│   │   └── beh2_molecule.py
-│   │
-│   └── main.py
-│
+├── README.md
 ├── requirements.txt
-├── .gitignore
-└── README.md
+└── src/
+    ├── main.py
+    ├── algorithms/
+    │   ├── vqe.py
+    │   ├── sqd.py
+    │   └── skqd.py
+    ├── ansatze/
+    │   └── ucj.py
+    ├── methods/
+    │   └── ccsd.py
+    └── molecules/
+        └── beh2_molecule.py
 ```
 
-### Main components
+`BeH2Molecule` owns the molecular data and exposes both the fermionic integrals and the Jordan–Wigner qubit Hamiltonian.
 
-#### Molecule
+## UCJ
 
-`BeH2Molecule` encapsulates the molecular system and exposes the quantities required by the different algorithms, including:
+The UCJ ansatz is built as a parameterized Qiskit circuit using:
 
-* molecular and active-space information
-* number of electrons
-* qubit Hamiltonian
-* one- and two-body integrals
-* core energy
-* CASCI reference energy
-* SCF data
+* Givens rotations;
+* a diagonal Jastrow term;
+* the inverse Givens network;
+* multiple configurable layers.
 
-#### CCSD
+CCSD `t1` and `t2` amplitudes provide the initial parameters.
 
-The `CCSD` implementation is used to obtain coupled-cluster amplitudes and an energy reference.
+The implementation was cross-checked against `ffsim` and reached:
 
-The resulting `T1` and `T2` amplitudes are subsequently used to initialize the UCJ ansatz.
-
-#### UCJ ansatz
-
-The `UCJ` ansatz is constructed from the molecular active-space size and the number of repetitions.
-
-The CCSD amplitudes are used to initialize the ansatz parameters:
-
-```python
-ansatz = UCJ(num_orbitals, n_reps=3)
-ansatz.from_t_amplitudes(t1, t2)
+```text
+state fidelity = 1
 ```
 
-#### VQE
+## Results
 
-The Variational Quantum Eigensolver optimizes the parameters of the quantum circuit with respect to the molecular qubit Hamiltonian.
+**BeH₂ — STO-3G — 6 orbitals / 4 electrons**
 
-#### SQD
+| Method | Energy (Ha) | ΔE from CCSD (Ha) |
+| ------ | ----------: | ----------------: |
+| RHF    |  -15.561278 |                 — |
+| CASCI  |  -15.594710 |         reference |
+| CCSD   |  -15.594350 |                 — |
+| VQE    |  -15.588573 |            0.0058 |
+| SQD    |  -15.589308 |            0.0050 |
+| SKQD   |  -15.591839 |            0.0025 |
 
-Sample-based Quantum Diagonalization uses samples obtained from the quantum circuit to estimate the molecular ground-state energy.
+Configuration:
 
-#### SKQD
+* UCJ: `n_reps = 3`
+* VQE: COBYLA, 10 iterations
+* SQD/SKQD: classical fermionic subspace diagonalization
 
-Sampling-based Krylov Quantum Diagonalization extends the sampling approach by constructing a Krylov subspace from the molecular Hamiltonian and sampled quantum states.
+CASCI is exact **within the selected active space**.
 
-## Requirements
-
-The project currently depends on:
-
-* Python
-* Qiskit
-* Qiskit Aer
-* Qiskit Addon SQD
-* Qiskit IBM Runtime
-* NumPy
-* PySCF
-* SciPy
-* ffsim
-* Matplotlib
-
-The complete dependency list is available in [`requirements.txt`](requirements.txt).
-
-## Installation
-
-Clone the repository:
+## Running
 
 ```bash
 git clone https://github.com/GiveMeACent/molecular-ground-state.git
 cd molecular-ground-state
-```
 
-Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-On Windows:
-
-```powershell
-.venv\Scripts\activate
-```
-
-Install the dependencies:
-
-```bash
 pip install -r requirements.txt
-```
-
-## Running the project
-
-From the repository root, run:
-
-```bash
 python src/main.py
 ```
 
-The current implementation uses Qiskit Aer as the simulation backend.
+## Main dependencies
 
-The workflow:
-
-1. Initializes an `AerSimulator`.
-2. Creates the Qiskit transpilation pass manager.
-3. Builds the BeH₂ molecular system.
-4. Computes the CCSD reference and obtains its amplitudes.
-5. Builds and initializes a UCJ ansatz.
-6. Prepares a Hartree–Fock initial state using the Jordan–Wigner representation.
-7. Runs VQE.
-8. Runs SQD.
-9. Runs SKQD.
-10. Prints the resulting energies for comparison.
-
-## Output
-
-At the end of the execution, the program prints a summary similar to:
-
-```text
-=== SUMMARY ===
-E(CASCI): ...
-E(CCSD):  ...
-E(VQE):   ...
-E(SQD):   ...
-E(SKQD):  ...
-```
-
-The numerical values depend on the molecular setup, simulation configuration and algorithmic parameters.
-
-## Computational workflow
-
-The overall workflow can be summarized as:
-
-```text
-                    ┌───────────────┐
-                    │     BeH₂      │
-                    │   molecule    │
-                    └───────┬───────┘
-                            │
-                 ┌──────────┴──────────┐
-                 │                     │
-              CASCI                  CCSD
-                 │                     │
-          reference energy       T1 / T2 amplitudes
-                 │                     │
-                 │              ┌──────▼──────┐
-                 │              │     UCJ     │
-                 │              │   ansatz    │
-                 │              └──────┬──────┘
-                 │                     │
-                 │              Hartree–Fock
-                 │                initial state
-                 │                     │
-                 │          ┌──────────┼──────────┐
-                 │          │          │          │
-                 │         VQE        SQD       SKQD
-                 │          │          │          │
-                 └──────────┴──────────┴──────────┘
-                            │
-                     Energy comparison
-```
-
-## Methods
-
-### CASCI
-
-CASCI is used as a classical quantum-chemistry reference for the active-space problem.
-
-### CCSD
-
-CCSD provides both an energy estimate and the cluster amplitudes used to initialize the UCJ circuit.
-
-### VQE
-
-VQE estimates the ground-state energy by minimizing the expectation value
-
-```text
-E(θ) = ⟨ψ(θ)|H|ψ(θ)⟩
-```
-
-where `H` is the molecular qubit Hamiltonian and `θ` represents the parameters of the UCJ circuit.
-
-### SQD
-
-SQD uses samples generated by a quantum circuit to reconstruct and solve a reduced representation of the molecular problem.
-
-### SKQD
-
-SKQD builds upon the sampling approach by exploiting a Krylov subspace generated from the Hamiltonian, providing an alternative route to estimating the low-energy spectrum.
-
-## Quantum simulation
-
-The current entry point uses:
-
-```python
-backend = AerSimulator()
-```
-
-so the project can be executed locally without requiring access to a physical quantum processor.
-
-The Qiskit transpilation pipeline is configured with optimization level `3`.
-
-## Configuration
-
-The main algorithmic parameters are currently defined directly in the source code.
-
-For example, the UCJ ansatz uses three repetitions:
-
-```python
-ansatz = UCJ(num_orbitals, n_reps=3)
-```
-
-The SQD and SKQD routines also define their sampling configuration in `src/main.py`.
-
-These parameters can be modified to experiment with different circuit depths and sampling strategies.
-
-## Goals
-
-This project is intended as an experimental framework for studying molecular ground-state estimation with quantum algorithms.
-
-In particular, it provides a common environment for comparing:
-
-* classical quantum-chemistry reference methods;
-* variational quantum algorithms;
-* sampling-based quantum algorithms;
-* Krylov-subspace-based approaches.
+* `pyscf`: molecular integrals, RHF, CASCI, CCSD
+* `ffsim`: fermionic operators, decompositions, Jordan–Wigner mapping
+* `qiskit` / `qiskit-aer`: quantum circuits and simulation
+* `qiskit-addon-sqd`: SQD/SKQD post-processing and diagonalization
 
 ## References
 
-The implementation relies on the following software ecosystems:
-
-* [Qiskit](https://qiskit.org/)
-* [Qiskit Aer](https://github.com/Qiskit/qiskit-aer)
-* [Qiskit Addon SQD](https://github.com/Qiskit/qiskit-addon-sqd)
-* [Qiskit IBM Runtime](https://github.com/Qiskit/qiskit-ibm-runtime)
-* [PySCF](https://pyscf.org/)
-* [ffsim](https://github.com/qiskit-community/ffsim)
-
-## License
-
-No license is currently specified in the repository.
-
-If this project is intended for public reuse, consider adding an explicit open-source license.
-
-## Author
-
-**GiveMeACent**
-
-Repository:
-https://github.com/GiveMeACent/molecular-ground-state
+* IBM Quantum — [Sample-based quantum diagonalization of a chemistry Hamiltonian](https://quantum.cloud.ibm.com/docs/en/tutorials/sample-based-quantum-diagonalization)
+* IBM Quantum — [Sample-based Krylov quantum diagonalization of a fermionic lattice model](https://quantum.cloud.ibm.com/docs/en/tutorials/sample-based-krylov-quantum-diagonalization)
+* Motta et al. — [Quantum-Centric Algorithm for Sample-Based Krylov Diagonalization](https://arxiv.org/abs/2501.09702)
+* [ffsim](https://qiskit-community.github.io/ffsim/)
