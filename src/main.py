@@ -1,5 +1,5 @@
 import ffsim
-from qiskit_ibm_runtime import EstimatorV2 as Estimator
+from qiskit_ibm_runtime import EstimatorV2 as Estimator, Sampler
 from qiskit_aer import AerSimulator
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
@@ -7,6 +7,7 @@ from molecules.beh2_molecule import BeH2Molecule
 from methods.ccsd import CCSD
 from ansatze.ucj import UCJ
 from algorithms.vqe import VQE
+from algorithms.sqd import SQD
 
 
 def main():
@@ -15,6 +16,7 @@ def main():
       target=backend.target, optimization_level=3
   )
   estimator = Estimator(backend)
+  sampler = Sampler(backend)
 
   mol = BeH2Molecule()
   num_orbitals = len(mol.get_active_space())
@@ -42,12 +44,17 @@ def main():
       initial_state,
   )
 
-  result = vqe.run()
+  sqd = SQD(circuit.assign_parameters(parameters), sampler, pass_manager, mol.get_body_integrals(),
+            mol.get_core_energy(), num_orbitals, n_electrons, initial_state, shots=10_000)
+
+  vqe_result = vqe.run().fun
+  sqd_result = sqd.run()["energy"]
 
   print("=== SUMMARY ===")
   print(f"E(CASCI): {mol.get_casci_energy()}")
   print(f"E(CCSD):  {ccsd.get_energy()}")
-  print(f"E(VQE):   {result.fun}")
+  print(f"E(VQE):   {vqe_result}")
+  print(f"E(SQD):   {sqd_result}")
 
 
 if __name__ == "__main__":
