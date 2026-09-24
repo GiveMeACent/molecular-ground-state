@@ -47,7 +47,7 @@ molecular-ground-state/
         └── beh2_molecule.py
 ```
 
-`BeH2Molecule` owns the molecular data and exposes both the fermionic integrals and the Jordan–Wigner qubit Hamiltonian.
+`BeH2Molecule` owns the molecular data and exposes both the fermionic integrals and the Jordan-Wigner qubit Hamiltonian.
 
 ## UCJ
 
@@ -100,7 +100,7 @@ python src/main.py
 ## Main dependencies
 
 * `pyscf`: molecular integrals, RHF, CASCI, CCSD
-* `ffsim`: fermionic operators, decompositions, Jordan–Wigner mapping
+* `ffsim`: fermionic operators, decompositions, Jordan-Wigner mapping
 * `qiskit` / `qiskit-aer`: quantum circuits and simulation
 * `qiskit-addon-sqd`: SQD/SKQD post-processing and diagonalization
 
