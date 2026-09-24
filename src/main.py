@@ -60,7 +60,7 @@ def main():
   print(f"E(CCSD):  {ccsd.get_energy()}")
   print(f"E(VQE):   {vqe_result}")
   print(f"E(SQD):   {sqd_result}")
-  print(f"E(SKQD):   {skqd_result}")
+  print(f"E(SKQD):  {skqd_result}")
 
 
 if __name__ == "__main__":
