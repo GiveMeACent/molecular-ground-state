@@ -8,6 +8,7 @@ from methods.ccsd import CCSD
 from ansatze.ucj import UCJ
 from algorithms.vqe import VQE
 from algorithms.sqd import SQD
+from algorithms.skqd import SKQD
 
 
 def main():
@@ -47,14 +48,19 @@ def main():
   sqd = SQD(circuit.assign_parameters(parameters), sampler, pass_manager, mol.get_body_integrals(),
             mol.get_core_energy(), num_orbitals, n_electrons, initial_state, shots=10_000)
 
+  skqd = SKQD(mol.get_qubit_hamiltonian(), circuit.assign_parameters(parameters), mol.get_body_integrals(
+  ), mol.get_core_energy(), num_orbitals, n_electrons, 1.0, 2, sampler, pass_manager, initial_state, shots=100)
+
   vqe_result = vqe.run().fun
   sqd_result = sqd.run()["energy"]
+  skqd_result = skqd.run()["energy"]
 
   print("=== SUMMARY ===")
   print(f"E(CASCI): {mol.get_casci_energy()}")
   print(f"E(CCSD):  {ccsd.get_energy()}")
   print(f"E(VQE):   {vqe_result}")
   print(f"E(SQD):   {sqd_result}")
+  print(f"E(SKQD):   {skqd_result}")
 
 
 if __name__ == "__main__":
