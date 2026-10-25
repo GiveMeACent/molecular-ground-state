@@ -1,6 +1,6 @@
 # molecular-ground-state
 
-Ground-state energy estimation of **BeH₂** using three quantum-centric diagonalization techniques (**VQE**, **SQD**, and **SKQD**) compared against classical references (**RHF**, **CASCI**, and **CCSD**).
+Ground-state energy estimation of **BeH₂** using three quantum-centric diagonalization techniques (**VQE**, **SQD**, and **SKQD**) compared against classical references (**CASCI**, and **CCSD**).
 
 ## Why
 
@@ -25,7 +25,7 @@ The quantum methods are:
 * **SQD**: sampling from a fixed circuit followed by classical diagonalization in the sampled subspace;
 * **SKQD**: SQD extended with a Krylov sequence generated through Trotterized time evolution.
 
-The classical references are RHF, CASCI, and CCSD.
+The classical references are CASCI, and CCSD.
 
 ## Structure
 
@@ -97,8 +97,8 @@ python src/main.py
 
 ## Main dependencies
 
-* `pyscf`: molecular integrals, RHF, CASCI, CCSD
-* `ffsim`: fermionic operators, decompositions, Jordan-Wigner mapping
+* `pyscf`: molecular integrals, CASCI, CCSD
+* `ffsim`: fermionic operators, decompositions, Jordan-Wigner mapping, HF state
 * `qiskit` / `qiskit-aer`: quantum circuits and simulation
 * `qiskit-addon-sqd`: SQD/SKQD post-processing and diagonalization
 
