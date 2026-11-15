@@ -1,5 +1,6 @@
 import ffsim
-from qiskit_ibm_runtime import EstimatorV2 as Estimator, Sampler
+from qiskit.primitives import BackendEstimatorV2 as Estimator
+from qiskit_ibm_runtime.executor_sampler import Sampler
 from qiskit_aer import AerSimulator
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
@@ -13,11 +14,14 @@ from algorithms.skqd import SKQD
 
 def main():
   backend = AerSimulator()
-  pass_manager = generate_preset_pass_manager(
-      target=backend.target, optimization_level=3
+  estimator = Estimator(
+      backend=backend,
+      options={
+          "default_precision": 1 / (100000 ** 0.5)
+      }
   )
-  estimator = Estimator(backend)
   sampler = Sampler(backend)
+  pass_manager = generate_preset_pass_manager(backend=backend)
 
   mol = BeH2Molecule()
   num_orbitals = len(mol.get_active_space())

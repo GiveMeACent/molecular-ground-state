@@ -15,7 +15,7 @@ class BeH2Molecule:
             ["H", (2.60, 0, 0)],
         ],
         basis="sto-3g",
-        symmetry="Dooh",
+        symmetry=True,
     )
 
     self._n_frozen: int = 1

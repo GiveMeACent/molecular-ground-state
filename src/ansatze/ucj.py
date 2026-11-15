@@ -58,6 +58,9 @@ class UCJ:
     self._final_orbital_rotation = ucj_op.final_orbital_rotation
 
   def _initialize_givens_parameters(self):
+    if self._orbital_rotations is None:
+      raise RuntimeError(
+          "Call from_t_amplitudes() before building the circuit.")
     for k in range(self._n_reps + 1):
       if k < self._n_reps:
         mat = self._orbital_rotations[k]
@@ -88,6 +91,10 @@ class UCJ:
         self._diagonal_phases_per_layer[k].append((l, phi, param))
 
   def _initialize_jastrow_parameters(self):
+    if self._diag_coulomb_mats is None:
+      raise RuntimeError(
+          "Call from_t_amplitudes() before building the circuit.")
+
     for k in range(self._n_reps):
       J_aa = self._diag_coulomb_mats[k, 0]
       J_ab = self._diag_coulomb_mats[k, 1]
@@ -106,7 +113,7 @@ class UCJ:
 
   def _append_givens_network(
       self, circuit: QuantumCircuit, layer_idx: int, qubit_offset: int
-  ) -> None:
+  ):
     for i, j, _, _, theta_p, beta_p in self._orbital_givens_per_layer[layer_idx]:
       circuit.append(
           XXPlusYYGate(theta_p, beta_p),
@@ -117,7 +124,7 @@ class UCJ:
 
   def _append_jastrow(
       self, circuit: QuantumCircuit, layer_idx: int, qubit_offset: int
-  ) -> None:
+  ):
     for i, j, _, param in self._jastrow_aa_per_layer[layer_idx]:
       if i == j:
         circuit.append(PhaseGate(0.5 * param), [i + qubit_offset])
@@ -132,14 +139,14 @@ class UCJ:
       layer_idx: int,
       alpha_offset: int,
       beta_offset: int,
-  ) -> None:
+  ):
     for i, j, _, param in self._jastrow_ab_per_layer[layer_idx]:
       circuit.append(
           CPhaseGate(param),
           [i + alpha_offset, j + beta_offset],
       )
 
-  def _register_layer_values(self, layer_idx: int, include_jastrow: bool) -> None:
+  def _register_layer_values(self, layer_idx: int, include_jastrow: bool):
     for _, _, theta, beta, theta_p, beta_p in self._orbital_givens_per_layer[layer_idx]:
       self._parameters[theta_p] = theta
       self._parameters[beta_p] = beta
