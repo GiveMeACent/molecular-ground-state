@@ -1,9 +1,8 @@
-qiskit
-qiskit-aer
-qiskit-addon-sqd
-qiskit_ibm_runtime
-numpy
-pyscf
-scipy
-ffsim
-matplotlib
+qiskit==2.6.2
+qiskit-aer==0.18.2
+qiskit-ibm-runtime==0.52.1
+numpy==2.4.6
+pyscf==2.15.0
+scipy==1.15.3
+ffsim==0.0.84
+matplotlib==3.11.2
