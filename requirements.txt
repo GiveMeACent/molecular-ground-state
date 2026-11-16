@@ -1,6 +1,7 @@
 qiskit==2.6.2
 qiskit-aer==0.18.2
 qiskit-ibm-runtime==0.52.1
+qiskit-addon-sqd==0.14.1
 numpy==2.4.6
 pyscf==2.15.0
 scipy==1.15.3
