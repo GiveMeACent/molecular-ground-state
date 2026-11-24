@@ -1,6 +1,6 @@
 import numpy as np
 from qiskit import QuantumCircuit
-from qiskit_ibm_runtime import Sampler
+from qiskit.primitives import BackendSamplerV2
 from qiskit_addon_sqd.fermion import diagonalize_fermionic_hamiltonian
 from qiskit.primitives import BitArray
 
@@ -9,17 +9,15 @@ class SQD:
   def __init__(
       self,
       ansatz: QuantumCircuit,
-      sampler: Sampler,
+      sampler: BackendSamplerV2,
       pass_manager,
       body_integrals: tuple[np.ndarray, np.ndarray],
       core_energy: float,
       num_orbitals: int,
       nelec: tuple[int, int],
       initial_state: QuantumCircuit | None = None,
-      shots=500,
-      samples_per_batch=100,
-      num_batches=3,
-      max_iterations=5,
+      shots=500, samples_per_batch=100, num_batches=3, max_iterations=5,
+      seed=42
   ):
     self._ansatz = ansatz
     self._sampler = sampler
@@ -33,6 +31,7 @@ class SQD:
     self._samples_per_batch = samples_per_batch
     self._num_batches = num_batches
     self._max_iterations = max_iterations
+    self._seed = seed
 
     self._circuit_isa: QuantumCircuit | None = None
     self._result_history: list = []
@@ -54,6 +53,8 @@ class SQD:
     return result[0].data.meas
 
   def run(self) -> dict:
+    self._result_history.clear()
+
     self._prepare_circuit()
     bit_array = self._sample()
 
@@ -67,6 +68,7 @@ class SQD:
         num_batches=self._num_batches,
         max_iterations=self._max_iterations,
         symmetrize_spin=True, callback=callback,
+        seed=self._seed
     )
 
     return {

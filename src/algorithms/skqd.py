@@ -1,7 +1,7 @@
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import SparsePauliOp
-from qiskit_ibm_runtime import Sampler
+from qiskit.primitives import BackendSamplerV2
 from qiskit_addon_sqd.fermion import diagonalize_fermionic_hamiltonian
 from qiskit.primitives import BitArray
 from qiskit.circuit.library import PauliEvolutionGate
@@ -10,14 +10,15 @@ from qiskit.circuit.library import PauliEvolutionGate
 class SKQD:
   def __init__(
       self, qubit_hamiltonian: SparsePauliOp,
+      sampler: BackendSamplerV2, pass_manager,
       ansatz: QuantumCircuit,
       body_integrals: tuple[np.ndarray, np.ndarray],
       core_energy: float,
       num_orbitals: int, nelec: tuple[int, int],
       time_step: float, krylov_dim: int,
-      sampler: Sampler, pass_manager,
       initial_state: QuantumCircuit | None = None,
       shots=500, samples_per_batch=100, num_batches=3, max_iterations=5,
+      seed=42
   ):
     self._qubit_hamiltonian = qubit_hamiltonian
     self._ansatz = ansatz
@@ -34,6 +35,7 @@ class SKQD:
     self._samples_per_batch = samples_per_batch
     self._num_batches = num_batches
     self._max_iterations = max_iterations
+    self._seed = seed
 
     self._result_history = []
 
@@ -42,13 +44,14 @@ class SKQD:
     time_evolution_gate = PauliEvolutionGate(
         self._qubit_hamiltonian, time=self._time_step)
 
-    for _ in range(self._krylov_dim):
+    for k in range(self._krylov_dim):
       krylov_circuit = QuantumCircuit(
           2 * self._num_orbitals, 2 * self._num_orbitals)
       if self._initial_state is not None:
         krylov_circuit.compose(self._initial_state, inplace=True)
       krylov_circuit.compose(self._ansatz, inplace=True)
-      for _ in range(self._krylov_dim):
+
+      for _ in range(k):
         krylov_circuit.compose(time_evolution_gate, inplace=True)
       krylov_circuit.measure_all()
       krylov_circuits.append(self._pass_manager.run(krylov_circuit))
@@ -62,6 +65,8 @@ class SKQD:
     return BitArray.concatenate_shots(bit_arrays)
 
   def run(self) -> dict:
+    self._result_history.clear()
+
     circuits = self._build_krylov_circuits()
     bit_array = self._sample_all(circuits)
 
@@ -75,6 +80,7 @@ class SKQD:
         num_batches=self._num_batches,
         max_iterations=self._max_iterations,
         symmetrize_spin=True, callback=callback,
+        seed=self._seed
     )
 
     return {

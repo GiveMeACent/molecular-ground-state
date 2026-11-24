@@ -1,8 +1,11 @@
+from qiskit.transpiler import generate_preset_pass_manager
 import ffsim
 from qiskit.primitives import BackendEstimatorV2 as Estimator
-from qiskit_ibm_runtime.executor_sampler import Sampler
+from qiskit.primitives import BackendSamplerV2 as Sampler
 from qiskit_aer import AerSimulator
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+import random
+import numpy as np
 
 from molecules.beh2_molecule import BeH2Molecule
 from methods.ccsd import CCSD
@@ -13,15 +16,25 @@ from algorithms.skqd import SKQD
 
 
 def main():
-  backend = AerSimulator()
+  random.seed(42)
+  np.random.seed(42)
+
+  backend = AerSimulator(seed_simulator=42)
   estimator = Estimator(
       backend=backend,
       options={
-          "default_precision": 1 / (100000 ** 0.5)
+          "default_precision": 1 / (100000 ** 0.5),
+          "seed_simulator": 42
       }
   )
-  sampler = Sampler(backend)
-  pass_manager = generate_preset_pass_manager(backend=backend)
+  sampler = Sampler(
+      backend=backend,
+      options={
+          "seed_simulator": 42
+      }
+  )
+  pass_manager = generate_preset_pass_manager(
+      backend=backend, seed_transpiler=42, optimization_level=1)
 
   mol = BeH2Molecule()
   num_orbitals = len(mol.get_active_space())
@@ -52,8 +65,8 @@ def main():
   sqd = SQD(circuit.assign_parameters(parameters), sampler, pass_manager, mol.get_body_integrals(),
             mol.get_core_energy(), num_orbitals, n_electrons, initial_state, shots=10_000)
 
-  skqd = SKQD(mol.get_qubit_hamiltonian(), circuit.assign_parameters(parameters), mol.get_body_integrals(
-  ), mol.get_core_energy(), num_orbitals, n_electrons, 1.0, 2, sampler, pass_manager, initial_state, shots=100)
+  skqd = SKQD(mol.get_qubit_hamiltonian(), sampler, pass_manager, circuit.assign_parameters(parameters), mol.get_body_integrals(
+  ), mol.get_core_energy(), num_orbitals, n_electrons, 1, 2, initial_state, shots=100)
 
   vqe_result = vqe.run().fun
   sqd_result = sqd.run()["energy"]
