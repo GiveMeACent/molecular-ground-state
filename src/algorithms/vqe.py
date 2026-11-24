@@ -22,7 +22,7 @@ class VQE:
       tolerance: float = 1e-6,
   ):
 
-    self._hamiltonian = hamiltonian
+    self._hamiltonian = hamiltonian.sort()
     self._ansatz = ansatz
     self._parameters = parameters
     self._estimator = estimator

@@ -9,7 +9,7 @@ from qiskit.circuit.library import PauliEvolutionGate
 
 class SKQD:
   def __init__(
-      self, qubit_hamiltonian: SparsePauliOp,
+      self, hamiltonian: SparsePauliOp,
       sampler: BackendSamplerV2, pass_manager,
       ansatz: QuantumCircuit,
       body_integrals: tuple[np.ndarray, np.ndarray],
@@ -20,7 +20,7 @@ class SKQD:
       shots=500, samples_per_batch=100, num_batches=3, max_iterations=5,
       seed=42
   ):
-    self._qubit_hamiltonian = qubit_hamiltonian
+    self._hamiltonian = hamiltonian.sort()
     self._ansatz = ansatz
     self._hcore, self._eri = body_integrals
     self._core_energy = core_energy
@@ -42,7 +42,7 @@ class SKQD:
   def _build_krylov_circuits(self) -> list[QuantumCircuit]:
     krylov_circuits: list[QuantumCircuit] = []
     time_evolution_gate = PauliEvolutionGate(
-        self._qubit_hamiltonian, time=self._time_step)
+        self._hamiltonian, time=self._time_step)
 
     for k in range(self._krylov_dim):
       krylov_circuit = QuantumCircuit(

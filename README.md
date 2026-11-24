@@ -18,6 +18,8 @@ The system is:
 * **STO-3G**
 * 1 frozen core orbital
 * active space: **6 orbitals / 4 electrons**
+* Hartree-Fock initial state
+* **UCJ** ansatz
 
 The quantum methods are:
 
@@ -63,25 +65,26 @@ CCSD `t1` and `t2` amplitudes provide the initial parameters.
 The implementation was cross-checked against `ffsim` and reached:
 
 ```text
-state fidelity = 1
+fidelity = 1
 ```
 
 ## Results
 
 **BeH₂ — STO-3G — 6 orbitals / 4 electrons**
 
-| Method | Energy (Ha) | ΔE from CCSD (Ha) |
-| ------ | ----------: | ----------------: |
-| CASCI  |  -15.594710 |          0.000360 |
-| VQE    |  -15.588573 |          0.007781 |
-| SQD    |  -15.589308 |          0.005041 |
-| SKQD   |  -15.591839 |          0.000433 |
+| Method | Energy (Ha) | ΔE from CASCI (Ha) |
+| --- | --- | --- |
+| CASCI | −15.594710 | 0.000000 |
+| SKQD | −15.594707 | +0.000003 |
+| CCSD | −15.594350 | +0.000361 |
+| SQD | −15.589308 | +0.005402 |
+| VQE | −15.581523 | +0.013187 |
 
 Configuration:
 
 * UCJ: `n_reps = 3`
-* VQE: COBYLA, 10 iterations
-* SQD/SKQD: classical fermionic subspace diagonalization
+* VQE: COBYLA, 10 iterations, precision of **1 / (100000 ** 0.5)**
+* SQD/SKQD: classical fermionic subspace diagonalization, 10000 shots
 
 CASCI is exact **within the selected active space**.
 
